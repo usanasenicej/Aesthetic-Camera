@@ -23,7 +23,7 @@ import UIKit
         case "hasTorch":
           result(Self.torchDevice()?.hasTorch ?? false)
         case "supportsIntensity":
-          result(Self.torchDevice()?.isTorchAvailable ?? false)
+          result(Self.torchDevice()?.hasTorch ?? false)
         case "setEnabled":
           let enabled = (call.arguments as? [String: Any])?["enabled"] as? Bool ?? false
           try Self.setTorch(enabled: enabled, intensity: 0.8)
