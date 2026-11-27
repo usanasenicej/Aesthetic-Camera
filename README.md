@@ -406,7 +406,7 @@ cd smartphone-virtual-lighting-studio
 
 ```bash
 
-cd frontend
+cd mobile
 
 
 
@@ -486,7 +486,7 @@ Run the Python application using its configured entry point:
 
 ```bash
 
-python main.py
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ```
 

@@ -5,37 +5,37 @@ import 'package:flutter/material.dart';
 import 'package:gal/gal.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import 'photo_api.dart';
+import '../theme.dart';
+import 'editor_screen.dart';
 
-class CameraPage extends StatefulWidget {
-  const CameraPage({super.key});
+class CameraScreen extends StatefulWidget {
+  const CameraScreen({super.key, this.startWithTorch = false});
+
+  final bool startWithTorch;
 
   @override
-  State<CameraPage> createState() => _CameraPageState();
+  State<CameraScreen> createState() => _CameraScreenState();
 }
 
-class _CameraPageState extends State<CameraPage> {
+class _CameraScreenState extends State<CameraScreen> {
   CameraController? _controller;
   Future<void>? _initFuture;
-  String? _error;
   bool _busy = false;
-  bool _uploadToBackend = true;
+  bool _torchOn = false;
   XFile? _lastShot;
 
   @override
   void initState() {
     super.initState();
+    _torchOn = widget.startWithTorch;
     _initFuture = _setupCamera();
   }
 
   Future<void> _setupCamera() async {
     final cameraStatus = await Permission.camera.request();
-    final photosStatus = await Permission.photos.request();
+    await Permission.photos.request();
     if (!cameraStatus.isGranted) {
       throw Exception('Camera permission is required.');
-    }
-    if (!photosStatus.isGranted && !photosStatus.isLimited) {
-      // Saving still works on many devices with add-only access.
     }
 
     final cameras = await availableCameras();
@@ -55,13 +55,22 @@ class _CameraPageState extends State<CameraPage> {
       imageFormatGroup: ImageFormatGroup.jpeg,
     );
     await controller.initialize();
+    if (_torchOn) {
+      await controller.setFlashMode(FlashMode.torch);
+    }
     if (!mounted) {
       await controller.dispose();
       return;
     }
-    setState(() {
-      _controller = controller;
-    });
+    setState(() => _controller = controller);
+  }
+
+  Future<void> _toggleTorch() async {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+    final next = !_torchOn;
+    await controller.setFlashMode(next ? FlashMode.torch : FlashMode.off);
+    setState(() => _torchOn = next);
   }
 
   Future<void> _takePicture() async {
@@ -73,20 +82,11 @@ class _CameraPageState extends State<CameraPage> {
     setState(() => _busy = true);
     try {
       final shot = await controller.takePicture();
-      await Gal.putImage(shot.path, album: 'Aesthetic Camera');
-      if (_uploadToBackend) {
-        await PhotoApi().upload(File(shot.path));
-      }
+      await Gal.putImage(shot.path, album: 'Lighting Studio');
       if (!mounted) return;
       setState(() => _lastShot = shot);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _uploadToBackend
-                ? 'Saved on this phone and uploaded.'
-                : 'Saved to your photo gallery.',
-          ),
-        ),
+        const SnackBar(content: Text('Saved to your photo gallery.')),
       );
     } catch (error) {
       if (!mounted) return;
@@ -100,6 +100,16 @@ class _CameraPageState extends State<CameraPage> {
     }
   }
 
+  Future<void> _openEditor() async {
+    final shot = _lastShot;
+    if (shot == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => EditorScreen(imagePath: shot.path),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _controller?.dispose();
@@ -109,7 +119,7 @@ class _CameraPageState extends State<CameraPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF111111),
+      backgroundColor: StudioTheme.ink,
       body: FutureBuilder<void>(
         future: _initFuture,
         builder: (context, snapshot) {
@@ -117,13 +127,10 @@ class _CameraPageState extends State<CameraPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            _error = snapshot.error.toString();
             return _ErrorView(
-              message: _error!,
+              message: snapshot.error.toString(),
               onRetry: () {
-                setState(() {
-                  _initFuture = _setupCamera();
-                });
+                setState(() => _initFuture = _setupCamera());
               },
             );
           }
@@ -142,30 +149,27 @@ class _CameraPageState extends State<CameraPage> {
                 child: Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                      padding: const EdgeInsets.fromLTRB(8, 4, 16, 0),
                       child: Row(
                         children: [
+                          IconButton(
+                            onPressed: () => Navigator.of(context).maybePop(),
+                            icon: const Icon(Icons.arrow_back, color: StudioTheme.cream),
+                          ),
                           const Text(
-                            'AESTHETIC',
+                            'CAPTURE',
                             style: TextStyle(
-                              color: Color(0xFFF4EDE4),
+                              color: StudioTheme.cream,
                               letterSpacing: 4,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           const Spacer(),
-                          FilterChip(
-                            selected: _uploadToBackend,
-                            label: const Text('Upload'),
-                            onSelected: (value) {
-                              setState(() => _uploadToBackend = value);
-                            },
-                            selectedColor: const Color(0xFFD7B899),
-                            backgroundColor: Colors.black54,
-                            labelStyle: TextStyle(
-                              color: _uploadToBackend
-                                  ? const Color(0xFF111111)
-                                  : const Color(0xFFF4EDE4),
+                          IconButton(
+                            onPressed: _toggleTorch,
+                            icon: Icon(
+                              _torchOn ? Icons.flash_on : Icons.flash_off,
+                              color: _torchOn ? StudioTheme.sand : StudioTheme.cream,
                             ),
                           ),
                         ],
@@ -175,13 +179,25 @@ class _CameraPageState extends State<CameraPage> {
                     if (_lastShot != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(
-                            File(_lastShot!.path),
-                            width: 72,
-                            height: 72,
-                            fit: BoxFit.cover,
+                        child: GestureDetector(
+                          onTap: _openEditor,
+                          child: Column(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.file(
+                                  File(_lastShot!.path),
+                                  width: 72,
+                                  height: 72,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Edit lighting',
+                                style: TextStyle(color: StudioTheme.cream, fontSize: 12),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -194,10 +210,7 @@ class _CameraPageState extends State<CameraPage> {
                           height: 78,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFFF4EDE4),
-                              width: 4,
-                            ),
+                            border: Border.all(color: StudioTheme.cream, width: 4),
                           ),
                           child: Center(
                             child: _busy
@@ -206,14 +219,14 @@ class _CameraPageState extends State<CameraPage> {
                                     height: 28,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Color(0xFFD7B899),
+                                      color: StudioTheme.sand,
                                     ),
                                   )
                                 : Container(
                                     width: 58,
                                     height: 58,
                                     decoration: const BoxDecoration(
-                                      color: Color(0xFFF4EDE4),
+                                      color: StudioTheme.cream,
                                       shape: BoxShape.circle,
                                     ),
                                   ),
@@ -272,7 +285,7 @@ class _ErrorView extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFFF4EDE4)),
+            style: const TextStyle(color: StudioTheme.cream),
           ),
           const SizedBox(height: 16),
           FilledButton(onPressed: onRetry, child: const Text('Try again')),
