@@ -5,11 +5,11 @@
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Aesthetic Camera needs the camera to take photos.</string>
+	<string>Lighting Studio needs the camera to take photos.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Aesthetic Camera saves photos to your library.</string>
+	<string>Lighting Studio saves edited photos to your library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Aesthetic Camera saves photos to your library.</string>
+	<string>Lighting Studio imports photos so you can add digital lighting.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>

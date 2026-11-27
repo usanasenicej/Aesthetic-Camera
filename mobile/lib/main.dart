@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'camera_page.dart';
+import 'screens/home_screen.dart';
+import 'theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,18 +14,10 @@ class AestheticCameraApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Aesthetic Camera',
+      title: 'Lighting Studio',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFD7B899),
-          brightness: Brightness.dark,
-        ),
-        scaffoldBackgroundColor: const Color(0xFF111111),
-        useMaterial3: true,
-      ),
-      home: const CameraPage(),
+      theme: StudioTheme.dark(),
+      home: const HomeScreen(),
     );
   }
 }
