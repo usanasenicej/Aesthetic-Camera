@@ -11,16 +11,22 @@ import '../widgets/spotlight_controls.dart';
 import '../widgets/spotlight_overlay.dart';
 
 class EditorScreen extends StatefulWidget {
-  const EditorScreen({super.key, required this.imagePath});
+  const EditorScreen({
+    super.key,
+    required this.imagePath,
+    this.initialSettings,
+  });
 
   final String imagePath;
+  final LightingSettings? initialSettings;
 
   @override
   State<EditorScreen> createState() => _EditorScreenState();
 }
 
 class _EditorScreenState extends State<EditorScreen> {
-  final _history = LightingHistory(LightingSettings.warmPortrait);
+  late final LightingHistory _history =
+      LightingHistory(widget.initialSettings ?? LightingSettings.warmPortrait);
   final _images = ImageService();
   final _api = PhotoApi();
   bool _busy = false;

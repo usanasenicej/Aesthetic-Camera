@@ -77,7 +77,8 @@ class HomeScreen extends StatelessWidget {
               ),
               const Spacer(),
               const Text(
-                'Photos are saved on this phone. The original stays untouched when you export an edit.',
+                'Photos stay on this phone. Export writes a new copy and leaves the original alone. '
+                'The LED cannot become a colored lamp — color is digital, after capture.',
                 style: TextStyle(color: StudioTheme.muted, fontSize: 12, height: 1.4),
               ),
             ],
